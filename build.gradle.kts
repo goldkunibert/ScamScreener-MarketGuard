@@ -95,10 +95,7 @@ dependencies {
     val midnightLibVersion = when (sc.current.version) {
         "26.1.2" -> "1.9.3+26.1-fabric"
         "26.2" -> "1.9.3+26.2-fabric"
-        // MidnightLib has no 26.3 build yet. Its 26.2 build declares minecraft >=26.2 but is not binary-compatible
-        // with 26.3 (RenderPipeline moved from blaze3d to renderpearl, ConfirmLinkScreen.confirmLinkNow(String) is
-        // gone): MarketGuardConfig.getScreen works around the former. Drop both once a 26.3 build is published.
-        "26.3" -> "1.9.3+26.2-fabric"
+        "26.3" -> "1.9.3+26.3-fabric"
         else -> throw GradleException("Unsupported MidnightLib target: ${sc.current.version}")
     }
     // TODO: Replace this temporary local Jar-in-Jar source with the HudLib Modrinth Maven dependency.

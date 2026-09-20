@@ -104,29 +104,24 @@ class MarketGuardConfigTest {
     }
 
     @Test
-    void auctionPriceHudHidesTheDifferenceRowByDefault() {
-        assertEquals(List.of("item", "auction", "lowest_bin", "advice", "!difference", "volatility", "liquidity", "stale"),
+    void auctionPriceHudShipsWithoutASeparateDifferenceRow() {
+        assertEquals(List.of("item", "auction", "lowest_bin", "advice", "volatility", "liquidity", "stale"),
                 MarketGuardConfig.auctionPriceHudRows);
     }
 
     @Test
-    void legacyAuctionPriceHudLayoutIsReplacedByTheNewDefaultOnce() {
-        MarketGuardConfig.auctionPriceHudRows = new ArrayList<>(List.of("item", "auction", "lowest_bin", "difference", "advice", "volatility", "liquidity", "stale"));
+    void removedAuctionPriceHudRowsAreDroppedFromSavedLayouts() {
+        MarketGuardConfig.auctionPriceHudRows = new ArrayList<>(List.of("auction", "item", "lowest_bin", "difference", "advice", "volatility", "liquidity", "stale"));
 
         assertTrue(MarketGuardConfig.normalizeValues());
-        assertEquals(List.of("item", "auction", "lowest_bin", "advice", "!difference", "volatility", "liquidity", "stale"),
+        assertEquals(List.of("auction", "item", "lowest_bin", "advice", "volatility", "liquidity", "stale"),
                 MarketGuardConfig.auctionPriceHudRows);
 
-        MarketGuardConfig.auctionPriceHudRows = new ArrayList<>(List.of("title", "item", "auction", "lowest_bin", "difference", "advice", "stale"));
+        MarketGuardConfig.auctionPriceHudRows = new ArrayList<>(List.of("title", "item", "auction", "lowest_bin", "!difference", "advice", "stale"));
         assertTrue(MarketGuardConfig.normalizeValues());
-        assertEquals(List.of("item", "auction", "lowest_bin", "advice", "!difference", "volatility", "liquidity", "stale"),
+        assertEquals(List.of("item", "auction", "lowest_bin", "advice", "stale", "volatility", "liquidity"),
                 MarketGuardConfig.auctionPriceHudRows);
-
-        MarketGuardConfig.auctionPriceHudRows = new ArrayList<>(List.of("item", "auction", "advice", "difference", "lowest_bin", "volatility", "liquidity", "stale"));
-        MarketGuardConfig.normalizeValues();
-        assertEquals(List.of("item", "auction", "advice", "difference", "lowest_bin", "volatility", "liquidity", "stale"),
-                MarketGuardConfig.auctionPriceHudRows);
-        MarketGuardConfig.auctionPriceHudRows = new ArrayList<>(List.of("item", "auction", "lowest_bin", "advice", "!difference", "volatility", "liquidity", "stale"));
+        MarketGuardConfig.auctionPriceHudRows = new ArrayList<>(MarketGuardConfig.DEFAULT_AUCTION_PRICE_HUD_ROWS);
     }
 
     @Test

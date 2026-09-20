@@ -265,7 +265,13 @@ public abstract class AuctionHouseMixin {
         }
 
         try {
-            AuctionPriceHud.update(itemId, displayName, SkyBlockItemUtil.getPriceFromNBT(auctionItem));
+            AuctionPriceHud.update(
+                    itemId,
+                    displayName,
+                    SkyBlockItemUtil.getNameColor(auctionItem),
+                    SkyBlockItemUtil.getPriceFromNBT(auctionItem),
+                    SkyBlockItemUtil.getStackCount(auctionItem)
+            );
             marketguard$auctionPriceWidgetKey = widgetKey;
         } catch (Exception ignored) {
             AuctionPriceHud.clear();

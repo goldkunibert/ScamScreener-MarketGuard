@@ -128,11 +128,13 @@ public final class HudCustomization {
     static Component example(HudId hud, String row) {
         return switch (hud) {
             case AUCTION_PRICE -> switch (row) {
-                case "item" -> Component.literal("6th Anniversary Barn Skin").withStyle(ChatFormatting.WHITE);
-                case "auction" -> Component.literal("This auction: 15,000,000 coins").withStyle(ChatFormatting.GOLD);
-                case "lowest_bin" -> Component.literal("Market price: ~15,400,000 coins").withStyle(ChatFormatting.GRAY);
-                case "difference" -> Component.literal("-400,000 coins (-3%) vs. market").withStyle(ChatFormatting.GREEN);
-                case "advice" -> Component.literal("Fair price").withStyle(ChatFormatting.GREEN);
+                case "item" -> Component.literal("6th Anniversary Barn Skin").withStyle(ChatFormatting.GOLD);
+                case "auction" -> Component.literal("Auction: ").withStyle(ChatFormatting.GRAY)
+                        .append(Component.literal("15,000,000 coins").withStyle(ChatFormatting.GOLD));
+                case "lowest_bin" -> Component.literal("Lowest BIN: ").withStyle(ChatFormatting.GRAY)
+                        .append(Component.literal("15,400,000 coins").withStyle(ChatFormatting.WHITE));
+                case "advice" -> Component.literal("Fair price").withStyle(ChatFormatting.GREEN)
+                        .append(Component.literal(" (-400,000 coins)").withStyle(ChatFormatting.GRAY));
                 case "volatility" -> Component.literal("Price trend: rising 35% vs. last month").withStyle(ChatFormatting.YELLOW);
                 case "liquidity" -> Component.literal("Hard to resell on the Bazaar").withStyle(ChatFormatting.YELLOW);
                 case "stale" -> Component.literal("Prices may be outdated").withStyle(ChatFormatting.YELLOW);
@@ -202,7 +204,7 @@ public final class HudCustomization {
         screens(hud).clear();
         screens(hud).addAll(defaultScreens(hud));
         rowValues(hud).clear();
-        rowValues(hud).addAll(hud == HudId.AUCTION_PRICE ? MarketGuardConfig.DEFAULT_AUCTION_PRICE_HUD_ROWS : defaultRows(hud));
+        rowValues(hud).addAll(defaultRows(hud));
         MarketGuardConfig.save();
     }
 
@@ -257,7 +259,7 @@ public final class HudCustomization {
 
     private static List<String> defaultRows(HudId hud) {
         return switch (hud) {
-            case AUCTION_PRICE -> MarketGuardConfig.AUCTION_PRICE_HUD_ROW_IDS;
+            case AUCTION_PRICE -> MarketGuardConfig.DEFAULT_AUCTION_PRICE_HUD_ROWS;
             case PLAYER -> MarketGuardConfig.DEFAULT_PLAYER_HUD_ROWS;
             case TRADE_GUARD -> MarketGuardConfig.DEFAULT_TRADE_GUARD_HUD_ROWS;
             case MINION_PROFIT -> MarketGuardConfig.DEFAULT_MINION_PROFIT_HUD_ROWS;

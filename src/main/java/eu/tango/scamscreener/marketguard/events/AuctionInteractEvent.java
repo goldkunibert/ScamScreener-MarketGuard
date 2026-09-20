@@ -87,6 +87,10 @@ public final class AuctionInteractEvent {
         }
 
         public double getPlayerPrice() throws Exception {
+            if (isBinView()) {
+                return SkyBlockItemUtil.getPriceFromNBT(getAuctionItemStack());
+            }
+
             int priceSlot = AuctionSlots.ITEM_PRICE.getSlot();
             return SkyBlockItemUtil.getPriceFromNBT(screenHandler.getSlot(priceSlot).getItem());
         }

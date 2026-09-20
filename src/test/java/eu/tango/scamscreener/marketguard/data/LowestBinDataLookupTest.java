@@ -38,11 +38,28 @@ class LowestBinDataLookupTest {
 
         assertTrue(result.hasValue());
         assertEquals(123.0, result.value());
+        assertEquals(1, result.lowestBinCount());
         assertEquals(150.0, result.average7d());
         assertEquals(175.0, result.average30d());
         assertFalse(result.stale());
         assertFalse(result.loading());
         assertFalse(result.refreshFailed());
+    }
+
+    @Test
+    void readsTheStackSizeOfTheCheapestListingWhenTheApiSendsIt() throws Exception {
+        JsonObject snapshot = new JsonObject();
+        JsonObject product = product(4_687.5, 11_694.0, 9_956.0, "57ad19ca639f412daee5765f87874e35");
+        product.addProperty("count", 64);
+        snapshot.add("SHINY_ORB", product);
+
+        LowestBinData.cache().setSnapshotForTests(snapshot, System.currentTimeMillis() + 60_000L);
+        LowestBinData.cache().setLastRefreshAttemptAtMsForTests(System.currentTimeMillis());
+
+        LowestBinData.LookupResult result = LowestBinData.lookupPriceData("SHINY_ORB");
+
+        assertEquals(4_687.5, result.value());
+        assertEquals(64, result.lowestBinCount());
     }
 
     @Test

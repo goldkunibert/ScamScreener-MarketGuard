@@ -7,10 +7,14 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,8 +25,11 @@ public class SkyBlockItemUtil {
             "(?:Item price|Buy it now): (?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+) coins",
             Pattern.CASE_INSENSITIVE
     );
+    // Hypixel names auction stacks "47x Shiny Orb"; the API prices are per unit (starting_bid / count)
+    private static final Pattern STACK_COUNT_PREFIX = Pattern.compile("^(\\d{1,6})x ");
     private static final String AUCTION_FOR_ITEM_PLACEHOLDER = "AUCTION FOR ITEM:";
     private static final String LEVEL_100_PET_PREFIX = "[Lvl 100] ";
+    private static final Pattern PET_LEVEL_PREFIX = Pattern.compile("\\[Lvl \\d+]");
 
     @Nullable
     public static String getSkyblockId(ItemStack itemStack) {
@@ -44,6 +51,25 @@ public class SkyBlockItemUtil {
         // The API keys max-level pets separately, e.g. BEE;4+100
         if (displayName != null && displayName.startsWith(LEVEL_100_PET_PREFIX)) return id + "+100";
         return id;
+    }
+
+    /** Units in an auction stack: the stack size or the {@code 47x} name prefix, whichever is larger; at least 1. */
+    public static int getStackCount(ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return 1;
+        }
+        return stackCount(itemStack.getHoverName().getString(), itemStack.getCount());
+    }
+
+    static int stackCount(@Nullable String displayName, int count) {
+        int named = 0;
+        if (displayName != null) {
+            Matcher matcher = STACK_COUNT_PREFIX.matcher(displayName);
+            if (matcher.find()) {
+                named = Integer.parseInt(matcher.group(1));
+            }
+        }
+        return Math.max(1, Math.max(count, named));
     }
 
     public static double getPriceFromNBT(ItemStack item) throws Exception {
@@ -99,30 +125,59 @@ public class SkyBlockItemUtil {
         return resolveDisplayName(displayName, lore == null ? List.of() : lore.lines());
     }
 
-    static String resolveDisplayName(String displayName, List<net.minecraft.network.chat.Component> loreLines) {
+    /** Hypixel colours item names by rarity; null when the name carries no colour. */
+    @Nullable
+    public static TextColor getNameColor(ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return null;
+        }
+
+        Component name = itemStack.getHoverName();
+        ItemLore lore = itemStack.get(DataComponents.LORE);
+        return nameColor(resolveDisplayNameComponent(name, lore == null ? List.of() : lore.lines()));
+    }
+
+    @Nullable
+    static TextColor nameColor(Component name) {
+        // pets carry a grey "[Lvl N]" prefix in front of the rarity-coloured name
+        return name.visit(
+                (style, text) -> style.getColor() != null && !text.isBlank() && !PET_LEVEL_PREFIX.matcher(text.trim()).matches()
+                        ? Optional.of(style.getColor())
+                        : Optional.<TextColor>empty(),
+                Style.EMPTY
+        ).orElse(null);
+    }
+
+    static String resolveDisplayName(String displayName, List<Component> loreLines) {
         if (displayName == null) {
             return null;
         }
 
-        if (!AUCTION_FOR_ITEM_PLACEHOLDER.equalsIgnoreCase(displayName.trim())) {
-            return displayName;
+        Component name = Component.literal(displayName);
+        Component resolved = resolveDisplayNameComponent(name, loreLines);
+        return resolved == name ? displayName : resolved.getString().trim();
+    }
+
+    /** The name itself, or for the {@code AUCTION FOR ITEM:} placeholder the lore line that carries the real name. */
+    private static Component resolveDisplayNameComponent(Component name, List<Component> loreLines) {
+        if (!AUCTION_FOR_ITEM_PLACEHOLDER.equalsIgnoreCase(name.getString().trim())) {
+            return name;
         }
 
         if (loreLines.size() > 1 && loreLines.getFirst().getString().isBlank()) {
-            String thirdTooltipLine = loreLines.get(1).getString().trim();
-            if (!thirdTooltipLine.isBlank()) {
+            Component thirdTooltipLine = loreLines.get(1);
+            if (!thirdTooltipLine.getString().isBlank()) {
                 return thirdTooltipLine;
             }
         }
 
-        for (net.minecraft.network.chat.Component line : loreLines) {
-            String value = line.getString().trim();
-            if (!value.isBlank()) {
-                return value;
+        for (Component line : loreLines) {
+            if (!line.getString().isBlank()) {
+                return line;
             }
         }
 
-        return displayName;
+        return name;
     }
 
     @Nullable

@@ -1,13 +1,16 @@
 package eu.tango.scamscreener.marketguard.util;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SkyBlockItemUtilTest {
 
@@ -53,6 +56,17 @@ class SkyBlockItemUtilTest {
     }
 
     @Test
+    void nameColourComesFromTheFirstColouredPartOfTheName() {
+        Component gold = Component.literal("Fancy Leggings").withStyle(ChatFormatting.GOLD);
+        Component nested = Component.empty().append(Component.literal("[Lvl 100] ").withStyle(ChatFormatting.GRAY)).append(Component.literal("Bee").withStyle(ChatFormatting.LIGHT_PURPLE));
+        Component plain = Component.literal("Rock");
+
+        assertEquals(TextColor.fromLegacyFormat(ChatFormatting.GOLD), SkyBlockItemUtil.nameColor(gold));
+        assertEquals(TextColor.fromLegacyFormat(ChatFormatting.LIGHT_PURPLE), SkyBlockItemUtil.nameColor(nested));
+        assertNull(SkyBlockItemUtil.nameColor(plain));
+    }
+
+    @Test
     void getDisplayNameReturnsNormalItemNameWhenNotPlaceholder() {
         assertEquals("Fancy Leggings", SkyBlockItemUtil.resolveDisplayName("Fancy Leggings", List.of()));
     }
@@ -60,6 +74,16 @@ class SkyBlockItemUtilTest {
     @Test
     void parsesBuyItNowPriceFromBinAuctionLore() {
         assertEquals(4_242_911_000D, SkyBlockItemUtil.parsePrice("Buy it now: 4,242,911,000 coins"));
+    }
+
+    @Test
+    void readsTheStackCountFromTheStackOrTheHypixelNamePrefix() {
+        assertEquals(47, SkyBlockItemUtil.stackCount("47x Shiny Orb", 47));
+        assertEquals(47, SkyBlockItemUtil.stackCount("47x Shiny Orb", 1));
+        assertEquals(64, SkyBlockItemUtil.stackCount("Enchanted Diamond", 64));
+        assertEquals(1, SkyBlockItemUtil.stackCount("Shiny Orb", 0));
+        assertEquals(1, SkyBlockItemUtil.stackCount("[Lvl 100] Bee", 1));
+        assertEquals(1, SkyBlockItemUtil.stackCount(null, 1));
     }
 
     private static CompoundTag petExtraAttributes(String type, String tier) {

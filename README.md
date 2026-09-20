@@ -8,7 +8,9 @@ MarketGuard currently steps in during two common risk situations:
 
 - When creating a `Create BIN Auction`, the mod checks whether your listed price is significantly below the `Lowest BIN`.
 - When opening a `Bin Auction View`, the mod checks whether the purchase price is significantly above the `Lowest BIN`.
-- In a `Bin Auction View`, the movable `Auction Price` HUD card shows the offered price, the market price, and a one-line verdict (`Cheapest BIN right now`, `Fair price`, `Good deal: 25% below market`, `12% above market`, `25% above market - overpriced`) that follows your protection thresholds.
+- In a `Bin Auction View`, the movable `Auction Price` HUD card shows the offered price, the market price, and a one-line verdict (`Cheapest BIN right now`, `Fair price`, `Good deal: 25% below market`, `12% above market`, `25% above market - overpriced`) with the coin difference, all following your protection thresholds.
+
+By default both compare against the current `Lowest BIN` - the cheapest listing on the auction house right now, scaled to the stack size of the auction - and the HUD names it as such (`Lowest BIN: 1.6M coins`; when the cheapest listing per item is a stack, the listing itself: `Lowest BIN: 64x for 300k coins (4.7k each)`). The `Market price basis` setting can switch HUD and warnings together to `Median` (median of Lowest BIN, 7-day and 30-day average, shown as `Median: ~1.8M coins`) or `In your favour` (that median, but when the three disagree strongly the highest of them for purchases and the lowest for listings, shown as `Market: ~X`). When the other signals disagree with the shown price by more than a third, the HUD adds them in yellow, e.g. `Lowest BIN: 87k coins (avg 550k coins)` or `Median: ~1.8M coins (BIN 1.6M coins)`; `(few sales)` means there is no average to compare with.
 
 If a price falls outside your configured tolerance, the click is blocked and you receive a clear chat warning with the item name and percentage difference. That gives you an extra safety stop before an expensive mistake goes through.
 
@@ -140,7 +142,7 @@ MarketGuard only blocks when both conditions are met:
 2. Run `./gradlew build` (Linux/macOS) or `gradlew.bat build` (Windows).
 3. Use `buildAndCollect` to collect remapped artifacts under `build/libs/<mod.version>/`.
 
-A target can be built against a Minecraft pre-release by setting `deps.minecraft` in its `versions/<version>/gradle.properties` (currently `26.3` -> `26.3-rc-2`); such a target is skipped by the publish tasks until the property is removed.
+A target can be built against a Minecraft pre-release by setting `deps.minecraft` in its `versions/<version>/gradle.properties`; such a target is skipped by the publish tasks until the property is removed.
 
 ## Project Notes
 

@@ -5,6 +5,7 @@ import eu.tango.scamscreener.marketguard.MarketGuardConfig;
 import eu.tango.scamscreener.marketguard.data.LowestBinData;
 import eu.tango.scamscreener.marketguard.events.AuctionInteractEvent;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 
 import static eu.tango.scamscreener.marketguard.util.MessageBuilder.overbidding;
 
@@ -41,7 +42,11 @@ public final class AuctionOverbidding {
         if (mc == null || mc.player == null) return;
         if (!isEnabled()) return;
 
-        AuctionPricingResolver.PricingData pricing = AuctionPricingResolver.resolve(context, mc.player, false);
+        check(context, mc.player);
+    }
+
+    static void check(AuctionInteractEvent.Context context, LocalPlayer player) {
+        AuctionPricingResolver.PricingData pricing = AuctionPricingResolver.resolve(context, player, AuctionPricingResolver.Check.PURCHASE);
         if (pricing == null) return;
 
         double maximumAllowedPrice = pricing.referencePrice() * getMaximumAllowedPercentage();
@@ -65,7 +70,7 @@ public final class AuctionOverbidding {
                     overbidPercent,
                     maximumAllowedPrice,
                     context.getRemainingBypassClicks(),
-                    mc.player
+                    player
             );
             return;
         }

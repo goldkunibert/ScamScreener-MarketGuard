@@ -7,13 +7,11 @@ import eu.midnightdust.lib.config.EntryInfo;
 import eu.tango.scamscreener.marketguard.hud.HudCustomization;
 import eu.tango.scamscreener.marketguard.auction.AuctionOverbidding;
 import eu.tango.scamscreener.marketguard.auction.AuctionUnderbidding;
+import eu.tango.scamscreener.marketguard.auction.ReferencePriceBasis;
 import eu.tango.scamscreener.marketguard.profittracker.ProfitTrackerResetScreen;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.Button;
-//? if >=26.3 {
-/*import net.minecraft.client.gui.screens.Screen;*/
-//?}
 import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
@@ -36,8 +34,7 @@ public final class MarketGuardConfig extends MidnightConfig {
     public static final List<String> DEFAULT_MINION_PROFIT_HUD_SCREENS = List.of("minion");
     public static final List<String> DEFAULT_FORGE_PROFIT_HUD_SCREENS = List.of("forge");
     public static final List<String> DEFAULT_PROFIT_TRACKER_HUD_SCREENS = List.of("ingame");
-    public static final List<String> AUCTION_PRICE_HUD_ROW_IDS = List.of("item", "auction", "lowest_bin", "advice", "difference", "volatility", "liquidity", "stale");
-    public static final List<String> DEFAULT_AUCTION_PRICE_HUD_ROWS = List.of("item", "auction", "lowest_bin", "advice", "!difference", "volatility", "liquidity", "stale");
+    public static final List<String> DEFAULT_AUCTION_PRICE_HUD_ROWS = List.of("item", "auction", "lowest_bin", "advice", "volatility", "liquidity", "stale");
     public static final List<String> DEFAULT_PLAYER_HUD_ROWS = List.of(
             "name", "seen", "scamscreener", "status", "wealth", "profile_value",
             "first_join", "profile", "value_coverage", "value_missing", "value_status",
@@ -48,17 +45,14 @@ public final class MarketGuardConfig extends MidnightConfig {
     public static final List<String> DEFAULT_FORGE_PROFIT_HUD_ROWS = List.of("profit", "missing", "loading", "unavailable", "stale");
     public static final List<String> DEFAULT_PROFIT_TRACKER_HUD_ROWS = List.of("bazaar", "auction_house", "minion", "interest", "allowance", "total");
     // Layouts shipped by the 1.5.0 betas (after normalisation); configs still holding one receive the new default.
-    private static final List<List<String>> LEGACY_AUCTION_PRICE_HUD_ROWS = List.of(
-            List.of("item", "auction", "lowest_bin", "difference", "advice", "volatility", "liquidity", "stale"),
-            List.of("item", "auction", "lowest_bin", "difference", "advice", "stale", "volatility", "liquidity")
-    );
-
     @Entry(category = PROTECTION, min = 0, max = 100, isSlider = true)
     public static int underbiddingThreshold = AuctionUnderbidding.DEFAULT_THRESHOLD;
     @Entry(category = PROTECTION, min = 100, max = 200, isSlider = true)
     public static int overbiddingThreshold = AuctionOverbidding.DEFAULT_THRESHOLD;
     @Entry(category = PROTECTION, min = 0, max = Long.MAX_VALUE)
     public static double absoluteThreshold = DEFAULT_ABSOLUTE_THRESHOLD;
+    @Entry(category = PROTECTION)
+    public static ReferencePriceBasis marketPriceBasis = ReferencePriceBasis.LOWEST_BIN;
     @Entry(category = GENERAL)
     public static boolean debug = false;
     @Entry(category = GENERAL)
@@ -140,6 +134,14 @@ public final class MarketGuardConfig extends MidnightConfig {
 
     public static int getOverbiddingThreshold() {
         return overbiddingThreshold;
+    }
+
+    public static ReferencePriceBasis getMarketPriceBasis() {
+        return marketPriceBasis == null ? ReferencePriceBasis.LOWEST_BIN : marketPriceBasis;
+    }
+
+    public static void setMarketPriceBasis(ReferencePriceBasis basis) {
+        marketPriceBasis = basis == null ? ReferencePriceBasis.LOWEST_BIN : basis;
     }
 
     public static void setOverbiddingThreshold(int threshold) {
@@ -259,22 +261,6 @@ public final class MarketGuardConfig extends MidnightConfig {
         return new EntryInfo(null, MarketGuard.MOD_ID);
     }
 
-    //? if >=26.3 {
-    /*@Override
-    public MidnightConfigScreen getScreen(Screen parent) {
-        // MidnightLib has no 26.3 build. Its bundled 26.2 build draws the footer-only separator of tabbed screens
-        // through the pre-26.3 blaze3d RenderPipeline, which throws NoSuchFieldError on 26.3, so keep the vanilla
-        // separators instead. Remove together with the 26.3 MidnightLib mapping in build.gradle.kts.
-        return new MidnightConfigScreen(parent, MarketGuard.MOD_ID) {
-            @Override
-            public void init() {
-                super.init();
-                list.renderHeaderSeparator = true;
-            }
-        };
-    }*/
-    //?}
-
     static boolean normalizeValues() {
         boolean changed = false;
         if (underbiddingThreshold < 0 || underbiddingThreshold > 100) {
@@ -291,6 +277,10 @@ public final class MarketGuardConfig extends MidnightConfig {
         }
         if (playerHudPreset == null) {
             playerHudPreset = PlayerHudPreset.trade;
+            changed = true;
+        }
+        if (marketPriceBasis == null) {
+            marketPriceBasis = ReferencePriceBasis.LOWEST_BIN;
             changed = true;
         }
         if (auctionPriceHudScreens == null) { auctionPriceHudScreens = new ArrayList<>(DEFAULT_AUCTION_PRICE_HUD_SCREENS); changed = true; }
@@ -311,12 +301,7 @@ public final class MarketGuardConfig extends MidnightConfig {
         changed |= normalizeScreens(minionProfitHudScreens);
         changed |= normalizeScreens(forgeProfitHudScreens);
         changed |= normalizeScreens(profitTrackerHudScreens);
-        changed |= normalizeRows(auctionPriceHudRows, AUCTION_PRICE_HUD_ROW_IDS);
-        if (LEGACY_AUCTION_PRICE_HUD_ROWS.contains(auctionPriceHudRows)) {
-            auctionPriceHudRows.clear();
-            auctionPriceHudRows.addAll(DEFAULT_AUCTION_PRICE_HUD_ROWS);
-            changed = true;
-        }
+        changed |= normalizeRows(auctionPriceHudRows, DEFAULT_AUCTION_PRICE_HUD_ROWS);
         changed |= normalizeRows(playerHudRows, DEFAULT_PLAYER_HUD_ROWS);
         changed |= normalizeRows(tradeGuardHudRows, DEFAULT_TRADE_GUARD_HUD_ROWS);
         changed |= normalizeRows(minionProfitHudRows, DEFAULT_MINION_PROFIT_HUD_ROWS);

@@ -3,6 +3,7 @@ package eu.tango.scamscreener.marketguard.auction;
 import eu.tango.scamscreener.marketguard.MarketGuard;
 import eu.tango.scamscreener.marketguard.MarketGuardConfig;
 import eu.tango.scamscreener.marketguard.events.AuctionInteractEvent;
+import net.minecraft.client.player.LocalPlayer;
 
 import static eu.tango.scamscreener.marketguard.util.MessageBuilder.underbidding;
 
@@ -32,7 +33,11 @@ public final class AuctionUnderbidding {
         if (context.getMc() == null || context.getMc().player == null) return;
         if (!isEnabled()) return;
 
-        AuctionPricingResolver.PricingData pricing = AuctionPricingResolver.resolve(context, context.getMc().player, true);
+        check(context, context.getMc().player);
+    }
+
+    static void check(AuctionInteractEvent.Context context, LocalPlayer player) {
+        AuctionPricingResolver.PricingData pricing = AuctionPricingResolver.resolve(context, player, AuctionPricingResolver.Check.LISTING);
         if (pricing == null) return;
 
         double minimumAllowedPrice = pricing.referencePrice() * getMinimumAllowedPercentage();
@@ -56,7 +61,7 @@ public final class AuctionUnderbidding {
                     underbidPercent,
                     minimumAllowedPrice,
                     context.getRemainingBypassClicks(),
-                    context.getMc().player
+                    player
             );
             return;
         }

@@ -32,12 +32,18 @@ public final class LowestBinData {
 
     public record LookupResult(
             Double value,
+            int lowestBinCount,
             Double average7d,
             Double average30d,
             boolean stale,
             boolean loading,
             boolean refreshFailed
     ) {
+        /** A result whose Lowest BIN comes from a single-item listing (or from an API without the {@code count} field). */
+        public LookupResult(Double value, Double average7d, Double average30d, boolean stale, boolean loading, boolean refreshFailed) {
+            this(value, 1, average7d, average30d, stale, loading, refreshFailed);
+        }
+
         public boolean hasValue() {
             return value != null;
         }
@@ -58,21 +64,24 @@ public final class LowestBinData {
             notifyBlacklistedAuctioneerIfPresent(product, itemId);
         }
         Double value = product != null && product.has("price") ? product.get("price").getAsDouble() : null;
+        // stack size of the listing behind the per-unit price; older API builds do not send it
+        int lowestBinCount = product != null && product.has("count") ? Math.max(1, product.get("count").getAsInt()) : 1;
         Double average7d = readPositiveAverage(product, "avg7d");
         Double average30d = readPositiveAverage(product, "avg30d");
 
         MarketGuard.debug(
-                "Lowest BIN lookup itemId='{}' hasSnapshot={} lowestBin={} average7d={} average30d={} stale={} loading={} refreshFailed={}",
+                "Lowest BIN lookup itemId='{}' hasSnapshot={} lowestBin={} lowestBinCount={} average7d={} average30d={} stale={} loading={} refreshFailed={}",
                 itemId,
                 cacheView.snapshot() != null,
                 value,
+                lowestBinCount,
                 average7d,
                 average30d,
                 cacheView.stale(),
                 cacheView.loading(),
                 cacheView.refreshFailed()
         );
-        return new LookupResult(value, average7d, average30d, cacheView.stale(), cacheView.loading(), cacheView.refreshFailed());
+        return new LookupResult(value, lowestBinCount, average7d, average30d, cacheView.stale(), cacheView.loading(), cacheView.refreshFailed());
     }
 
     public static String findItemIdByName(String displayName) {

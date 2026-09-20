@@ -1,6 +1,7 @@
 package eu.tango.scamscreener.marketguard.auction;
 
 import eu.tango.scamscreener.marketguard.MarketGuard;
+import eu.tango.scamscreener.marketguard.MarketGuardConfig;
 import eu.tango.scamscreener.marketguard.data.LowestBinData;
 import eu.tango.scamscreener.marketguard.events.AuctionInteractEvent;
 import eu.tango.scamscreener.marketguard.util.SkyBlockItemUtil;
@@ -16,7 +17,21 @@ final class AuctionPricingResolver {
 
     record PricingData(String itemId, String displayName, double referencePrice, double playerPrice) {}
 
-    static PricingData resolve(AuctionInteractEvent.Context context, LocalPlayer player, boolean cancelOnFailure) {
+    enum Check {
+        /** Buying a BIN: the click goes through when the price cannot be read. */
+        PURCHASE(false),
+        /** Creating a BIN: the click is cancelled when the price cannot be read. */
+        LISTING(true);
+
+        private final boolean cancelOnFailure;
+
+        Check(boolean cancelOnFailure) {
+            this.cancelOnFailure = cancelOnFailure;
+        }
+    }
+
+    static PricingData resolve(AuctionInteractEvent.Context context, LocalPlayer player, Check check) {
+        boolean cancelOnFailure = check.cancelOnFailure;
         ItemStack itemStack = context.getAuctionItemStack();
         MarketGuard.debug(
                 "Resolving pricing title='{}' clickedSlot={} actionType={} auctionItem='{}'",
@@ -60,14 +75,18 @@ final class AuctionPricingResolver {
             return null;
         }
 
+        // API prices are per unit; the auction price covers the whole stack
+        int stackCount = SkyBlockItemUtil.getStackCount(itemStack);
+        ReferencePriceBasis basis = MarketGuardConfig.getMarketPriceBasis();
+        double referencePrice = (check == Check.PURCHASE ? reference.purchaseReference(basis) : reference.listingReference(basis)) * stackCount;
         if (!reference.safeForProtection()) {
             MarketGuard.debug(
-                    "Pricing resolution skipped: reference price quality is too low for protection itemId='{}' signals={} spread={}",
+                    "Pricing resolution with low-quality reference itemId='{}' basis={} signals={} spread={}",
                     itemId,
+                    basis,
                     reference.signalCount(),
                     reference.relativeSpread()
             );
-            return null;
         }
 
         if (lookupResult.stale()) {
@@ -75,8 +94,12 @@ final class AuctionPricingResolver {
         }
 
         MarketGuard.debug(
-                "Resolved reference price itemId='{}' value={} quality={} signals={} spread={}",
+                "Resolved reference price itemId='{}' check={} basis={} value={} stackCount={} unitMedian={} quality={} signals={} spread={}",
                 itemId,
+                check,
+                basis,
+                referencePrice,
+                stackCount,
                 reference.value(),
                 reference.quality(),
                 reference.signalCount(),
@@ -86,7 +109,7 @@ final class AuctionPricingResolver {
         try {
             double playerPrice = context.getPlayerPrice();
             MarketGuard.debug("Resolved player price itemId='{}' value={}", itemId, playerPrice);
-            return new PricingData(itemId, displayName, reference.value(), playerPrice);
+            return new PricingData(itemId, displayName, referencePrice, playerPrice);
         } catch (Exception e) {
             MarketGuard.debug("Pricing resolution failed while reading player price for '{}' error='{}'", itemId, e.getMessage());
             return abortPricing(

@@ -18,7 +18,7 @@ class HudCustomizationTest {
     void reset() {
         MarketGuardConfig.setPlayerHudPreset("trade");
         MarketGuardConfig.auctionPriceHudScreens = new ArrayList<>(List.of("bin_view"));
-        MarketGuardConfig.auctionPriceHudRows = new ArrayList<>(List.of("item", "auction", "lowest_bin", "advice", "!difference", "volatility", "liquidity", "stale"));
+        MarketGuardConfig.auctionPriceHudRows = new ArrayList<>(MarketGuardConfig.DEFAULT_AUCTION_PRICE_HUD_ROWS);
         MarketGuardConfig.playerHudScreens = new ArrayList<>(List.of("trade", "profile", "bin_view"));
         MarketGuardConfig.playerHudRows = new ArrayList<>(List.of(
                 "name", "seen", "scamscreener", "status", "wealth", "profile_value",
@@ -41,13 +41,13 @@ class HudCustomizationTest {
     }
 
     @Test
-    void resetRestoresTheShippedAuctionPriceLayoutWithTheDifferenceRowHidden() {
-        HudCustomization.placeRow(HudCustomization.HudId.AUCTION_PRICE, "difference", true, 0);
+    void resetRestoresTheShippedAuctionPriceLayout() {
+        HudCustomization.placeRow(HudCustomization.HudId.AUCTION_PRICE, "stale", false, 0);
         HudCustomization.placeRow(HudCustomization.HudId.AUCTION_PRICE, "advice", true, 0);
 
         HudCustomization.reset(HudCustomization.HudId.AUCTION_PRICE);
 
-        assertEquals(List.of("item", "auction", "lowest_bin", "advice", "!difference", "volatility", "liquidity", "stale"),
+        assertEquals(List.of("item", "auction", "lowest_bin", "advice", "volatility", "liquidity", "stale"),
                 MarketGuardConfig.auctionPriceHudRows);
         assertEquals(List.of("item", "auction", "lowest_bin", "advice", "volatility", "liquidity", "stale"),
                 HudCustomization.rows(HudCustomization.HudId.AUCTION_PRICE));
@@ -55,19 +55,19 @@ class HudCustomizationTest {
 
     @Test
     void rowsCanBeDroppedBetweenVisibleAndHiddenColumns() {
-        HudCustomization.placeRow(HudCustomization.HudId.AUCTION_PRICE, "difference", false, 0);
+        HudCustomization.placeRow(HudCustomization.HudId.AUCTION_PRICE, "stale", false, 0);
         HudCustomization.placeRow(HudCustomization.HudId.AUCTION_PRICE, "item", false, 0);
 
-        assertEquals(List.of("auction", "lowest_bin", "advice", "volatility", "liquidity", "stale", "!item", "!difference"),
+        assertEquals(List.of("auction", "lowest_bin", "advice", "volatility", "liquidity", "!item", "!stale"),
                 MarketGuardConfig.auctionPriceHudRows);
-        assertEquals(List.of("auction", "lowest_bin", "advice", "volatility", "liquidity", "stale"),
+        assertEquals(List.of("auction", "lowest_bin", "advice", "volatility", "liquidity"),
                 HudCustomization.editableRows(HudCustomization.HudId.AUCTION_PRICE, true));
-        assertEquals(List.of("item", "difference"),
+        assertEquals(List.of("item", "stale"),
                 HudCustomization.editableRows(HudCustomization.HudId.AUCTION_PRICE, false));
 
-        HudCustomization.placeRow(HudCustomization.HudId.AUCTION_PRICE, "difference", true, 1);
+        HudCustomization.placeRow(HudCustomization.HudId.AUCTION_PRICE, "stale", true, 1);
 
-        assertEquals(List.of("auction", "difference", "lowest_bin", "advice", "volatility", "liquidity", "stale", "!item"),
+        assertEquals(List.of("auction", "stale", "lowest_bin", "advice", "volatility", "liquidity", "!item"),
                 MarketGuardConfig.auctionPriceHudRows);
     }
 
@@ -92,10 +92,12 @@ class HudCustomizationTest {
 
     @Test
     void editorRowsUseHudExamplesInsteadOfConfigurationLabels() {
-        assertEquals("This auction: 15,000,000 coins",
+        assertEquals("Auction: 15,000,000 coins",
                 HudCustomization.example(HudCustomization.HudId.AUCTION_PRICE, "auction").getString());
-        assertEquals("Market price: ~15,400,000 coins",
+        assertEquals("Lowest BIN: 15,400,000 coins",
                 HudCustomization.example(HudCustomization.HudId.AUCTION_PRICE, "lowest_bin").getString());
+        assertEquals("Fair price (-400,000 coins)",
+                HudCustomization.example(HudCustomization.HudId.AUCTION_PRICE, "advice").getString());
         assertEquals("Bank + purse: 45,200,000",
                 HudCustomization.example(HudCustomization.HudId.PLAYER, "wealth").getString());
         assertEquals("Total: +12,500,000",
