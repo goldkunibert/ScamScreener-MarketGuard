@@ -72,11 +72,6 @@ val releaseType = try {
 repositories {
     mavenCentral()
 
-    flatDir {
-        name = "LocalTangosHudLib"
-        dirs(rootProject.file("../TangosHudLib/versions/${sc.current.version}/build/libs"))
-    }
-
     /**
      * Restricts dependency search of the given [groups] to the [maven URL][url],
      * improving the setup speed.
@@ -91,20 +86,12 @@ repositories {
 
 dependencies {
     val scamscreenerVersion = "2.2.0+26.1"
-    val localHudLibVersion = "1.2.0+${sc.current.version}"
+    val hudLibVersion = "1.2.0+${sc.current.version}"
     val midnightLibVersion = when (sc.current.version) {
         "26.1.2" -> "1.9.3+26.1-fabric"
         "26.2" -> "1.9.3+26.2-fabric"
         "26.3" -> "1.9.3+26.3-fabric"
         else -> throw GradleException("Unsupported MidnightLib target: ${sc.current.version}")
-    }
-    // TODO: Replace this temporary local Jar-in-Jar source with the HudLib Modrinth Maven dependency.
-    val localHudLibJar = rootProject.file(
-        "../TangosHudLib/versions/${sc.current.version}/build/libs/tangoshudlib-1.2.0+${sc.current.version}.jar"
-    )
-
-    if (!localHudLibJar.isFile) {
-        throw GradleException("Missing local Tango's HudLib build: ${localHudLibJar.path}")
     }
 
     // deps.minecraft lets a target build against a pre-release until the final version is published.
@@ -118,8 +105,8 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.mockito:mockito-core:5.17.0")
     compileOnly("maven.modrinth:scamscreener:$scamscreenerVersion")
-    implementation("local.tango:tangoshudlib:$localHudLibVersion")
-    include("local.tango:tangoshudlib:$localHudLibVersion")
+    implementation("maven.modrinth:dynamic-hudlib:$hudLibVersion")
+    include("maven.modrinth:dynamic-hudlib:$hudLibVersion")
     implementation("maven.modrinth:midnightlib:$midnightLibVersion")
     include("maven.modrinth:midnightlib:$midnightLibVersion")
     implementation("org.xerial:sqlite-jdbc:3.46.1.0")

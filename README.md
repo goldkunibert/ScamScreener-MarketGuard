@@ -138,9 +138,8 @@ MarketGuard only blocks when both conditions are met:
 
 ## Build
 
-1. Build Tango's HudLib for every Stonecutter target first (`./gradlew build` in the neighbouring `../TangosHudLib` checkout); MarketGuard's Gradle configuration fails with `Missing local Tango's HudLib build` otherwise.
-2. Run `./gradlew build` (Linux/macOS) or `gradlew.bat build` (Windows).
-3. Use `buildAndCollect` to collect remapped artifacts under `build/libs/<mod.version>/`.
+1. Run `./gradlew build` (Linux/macOS) or `gradlew.bat build` (Windows).
+2. Use `buildAndCollect` to collect remapped artifacts under `build/libs/<mod.version>/`.
 
 A target can be built against a Minecraft pre-release by setting `deps.minecraft` in its `versions/<version>/gradle.properties`; such a target is skipped by the publish tasks until the property is removed.
 
